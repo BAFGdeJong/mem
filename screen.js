@@ -1,39 +1,5 @@
 import { getRandomFloat } from './game_math.js';
 
-export const GAME_CONSTANTS = {
-  PHYSICS_STEP: 1000/60,
-  DELTA_TIME: 0,
-  FPS: 0,
-  TPS: 0,
-}
-
-export async function init_game({
-    canvas_height = 1080,
-    canvas_width = 800,
-    background_color = '#000'
-  }
-) {
-
-  const game = new Game({canvas_height, canvas_width, background_color});
-
-  for (let i = 0; i < 1; i++) {
-
-    const card = new Card(
-      new Vec2d(i * 100, i * 100), new Vec2d(120, 120)
-    );
-
-    game.add_object(card);
-  }
-
-  const fps_counter = new DebugElementFPS(new Vec2d(50, 50), new Vec2d(50, 50));
-  game.add_object(fps_counter);
-  const tps_counter = new DebugElementTPS(new Vec2d(450, 100), new Vec2d(50, 50));
-  game.add_object(tps_counter);
-
-
-  game.render_loop(performance.now());
-}
-
 class Game {
   canvas = null;
   game_objects = [];
@@ -97,8 +63,8 @@ class Game {
   update_physics() {
     while (this.accumulator >= GAME_CONSTANTS.PHYSICS_STEP) {
       this.game_objects.forEach((object) => {
-        if (typeof object.physics_process === 'function') {
-          object.physics_process();
+        if (typeof object.tick === 'function') {
+          object.tick();
         }
       });
 
@@ -128,6 +94,7 @@ class Game {
   draw_game_objects() {
     this.game_objects.forEach(gameObject => {
       if (typeof gameObject.draw === 'function') {
+        this.ctx.fillStyle = "#00000000";
         gameObject.draw(this.ctx);
       }});
   }
@@ -180,7 +147,7 @@ class Card extends SizedGameObject {
     }.bind(this));
   }
 
-  physics_process() {
+  tick() {
     this.pos = this.mouse;
   }
 
@@ -197,7 +164,7 @@ class DebugElementFPS extends SizedGameObject {
     super(pos, size, true);
   }
 
-  physics_process() {}
+  tick() {}
 
   draw(ctx) {
     ctx.fillStyle = "yellow";
@@ -211,7 +178,7 @@ class DebugElementTPS extends SizedGameObject {
     super(pos, size, true);
   }
 
-  physics_process() {}
+  tick() {}
 
   draw(ctx) {
     ctx.fillStyle = "yellow";

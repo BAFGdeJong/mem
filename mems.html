@@ -5,9 +5,12 @@
 </head>
 <body>
     <script type="module">
-        import { init_game } from './screen.js';
+        import { initGame, runEngine } from './engine.js';
+        import { Game } from './game.js';
 
-        init_game({canvas_width: 1920, canvas_height: 1080}).then().finally();
+		const game = new Game();
 
+        initGame(1920, 1080, "#88aa44", game).then().finally();
+		await game.run();
     </script>
 </body>

@@ -6,4 +6,8 @@ export const BINDINGS = {
   left_mouse: { keys: ['mouse0'] },
   middle_mouse: { keys: ['mouse1'] },
   right_mouse: { keys: ['mouse2'] },
+
+  stop_physics: { keys: ['KeyK']},
+  step_through: { keys: ['KeyL']},
+  toggle_debug: { keys: ['KeyM'] },
 };

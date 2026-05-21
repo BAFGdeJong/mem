@@ -30,6 +30,12 @@ class Engine {
   accumulator = 0;
   tps_timer = 0;
   tick_counter = 0;
+  total_tick_count = 0;
+
+  paused_physics = false;
+  paused_draw = false;
+  step_physics = false;
+  step_draw = false;
 
   onShutdown = () => {};
 
@@ -49,13 +55,9 @@ class Engine {
   }
 
   init(width, height, color) {
-    const div = document.createElement('div');
     this.canvas = document.createElement('canvas');
 
-    div.appendChild(this.canvas);
-    document.body.appendChild(div);
-
-    this.ctx  = this.canvas.getContext('2d');
+    this.ctx = this.canvas.getContext('2d');
 
     this.canvas.width = width;
     this.canvas.height = height;
@@ -64,6 +66,8 @@ class Engine {
 
     this.ctx.fillStyle = color;
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+    document.body.appendChild(this.canvas);
 
     this.rebind();
   }
@@ -105,17 +109,35 @@ class Engine {
         Object.assign(this[config.target], config.fields(e));
         if (config.pressed) this.KEYS_PRESSED[config.pressed(e)] = true;
         if (config.released) delete this.KEYS_PRESSED[config.released(e)];
+        this.processInput(event, e);
       };
       this.listeners.push({ event, handler });
       document.addEventListener(event, handler);
     }
   }
 
-  async loop(current_time = 0) {
+  processInput(event, e) {
+    const entities = this.entities;
+    const len = entities.length;
+    for (let i = 0; i < len; i++) {
+      if (entities[i].input && this.isEntityAllowed(entities[i])) entities[i].input(event, e);
+    }
+  }
+
+  loop(current_time = 0) {
     this.updateTimes(current_time);
-    this.updatePhysics();
-    this.clear();
-    this.drawEntities();
+
+    if (!this.paused_physics || this.step_physics) {
+      this.updatePhysics();
+      this.step_physics = false;
+    }
+
+    if (!this.paused_draw || this.step_draw) {
+      this.clear();
+      this.drawEntities();
+      this.step_draw = false;
+    }
+
     requestAnimationFrame((time) => this.loop(time));
   }
 
@@ -137,10 +159,11 @@ class Engine {
 
     while (this.accumulator >= step) {
       for (let i = 0; i < len; i++) {
-        if (entities[i].tick) entities[i].tick();
+        if (entities[i].tick && this.isEntityAllowed(entities[i])) entities[i].tick(step);
       }
       this.accumulator -= step;
       this.tick_counter++;
+      this.total_tick_count++;
     }
 
     if (this.tps_timer >= 1000) {
@@ -162,7 +185,6 @@ class Engine {
     if (!(entity instanceof Entity)) {
       throw new Error('Entity must be an instance of Entity');
     }
-    if (!this.DEBUG_ENABLED && entity.hasGroup('debug')) return -1;
 
     for (let i = 0; i < this.entities.length; i++) {
       if (this.entities[i] === undefined) {
@@ -192,6 +214,13 @@ class Engine {
     this.entities.splice(id, 1);
   }
 
+  isEntityAllowed(entity) {
+    for (const [group, allowed] of Object.entries(ENGINE_GROUPS)) {
+      if (entity.hasGroup(group) && !allowed()) return false;
+    }
+    return true;
+  }
+
   drawEntities() {
     const ctx = this.ctx;
     const entities = this.entities;
@@ -199,7 +228,7 @@ class Engine {
     ctx.fillStyle = "#00000000";
 
     for (let i = 0; i < len; i++) {
-      if (entities[i].draw) entities[i].draw(ctx);
+      if (entities[i].draw && this.isEntityAllowed(entities[i])) entities[i].draw(ctx);
     }
   }
 
@@ -216,6 +245,10 @@ async function init(width = 720, height = 1080, color = "#111", game = null) {
   }
 }
 
+const ENGINE_GROUPS = {
+  debug: () => ENGINE.DEBUG_ENABLED,
+};
+
 const ENGINE = new Engine();
 
 export function getIsDebugEnabled() { return ENGINE.DEBUG_ENABLED; }
@@ -224,6 +257,29 @@ export function getPhysicsStep() { return ENGINE.PHYSICS_STEP; }
 export function getDeltaTime() { return ENGINE.DELTA_TIME; }
 export function getFps() { return ENGINE.FPS; }
 export function getTps() { return ENGINE.TPS; }
+export function getTickCount() { return ENGINE.total_tick_count; }
+
+export function setPhysics() {
+  ENGINE.paused_physics = !ENGINE.paused_physics;
+  if (ENGINE.paused_physics) {
+    ENGINE.accumulator = 0;
+  } else {
+    ENGINE.last_time = performance.now();
+    ENGINE.accumulator = 0;
+  }
+}
+export function setDraw(enabled) { ENGINE.paused_draw = !enabled; }
+export function step(target = 'both') {
+  if (target === 'physics' || target === 'both') {
+    ENGINE.accumulator = ENGINE.PHYSICS_STEP;
+    ENGINE.step_physics = true;
+  }
+  if (target === 'draw' || target === 'both') ENGINE.step_draw = true;
+}
+
+export function setDebug() {
+  ENGINE.DEBUG_ENABLED = !ENGINE.DEBUG_ENABLED;
+}
 
 // INPUT / OUTPUT
 export function getInputMap() { return ENGINE.INPUT_MAP; }
@@ -240,8 +296,9 @@ export function isActionPressed(action) { return ENGINE.isActionPressed(action);
 export function setActions(actions) { ENGINE.INPUT_ACTIONS = actions; }
 //
 
-export async function runEngine(shutdown_promise) { await ENGINE.run(shutdown_promise); }
+export async function run(shutdown_promise) { await ENGINE.run(shutdown_promise); }
 export async function initGame(width = 720, height = 1080, color = "#111", game = null) { return init(width, height, color, game); }
+export function shutdown() { ENGINE.shutdown(); }
 
 export function getEntities() { return ENGINE.getEntities(); }
 export function getEntity(id) { return ENGINE.getEntity(id); }

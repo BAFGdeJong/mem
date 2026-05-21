@@ -1,7 +1,7 @@
 import { ComponentRenderRect, ComponentRenderText } from "../component/render.js";
 import { ComponentRect } from "../component/rect.js";
 
-import {getFps, getIsDebugEnabled, getTps} from "../engine.js";
+import { getFps, getIsDebugEnabled, getTickCount, getTps } from '../engine.js'
 import { Entity } from './entity.js'
 
 export class EntityDebug extends Entity {
@@ -52,5 +52,15 @@ export class EntityDebugTPS extends EntityDebug {
 
   tick() {
     this.setText("TPS: " + Math.floor(getTps()));
+  }
+}
+
+export class EntityDebugTC extends EntityDebug {
+  constructor(props) {
+    super({ tag: 'debug-TC', ...props });
+  }
+
+  tick() {
+    this.setText("TC: " + Math.floor(getTickCount()));
   }
 }

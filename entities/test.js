@@ -20,12 +20,12 @@ export class EntityTest extends Entity {
     this.text = new ComponentRenderText(text, "white");
   }
 
-  tick() {
+  tick(dt) {
     const pos = getMousePosition();
 
     if (this.rect.isInBounds(pos.x, pos.y)) {
       if (isActionPressed('left_mouse')) {
-        this.rect.move(100, 0);
+        this.rect.move(100 * dt, 0);
       }
     }
 

@@ -162,6 +162,7 @@ class Engine {
     if (!(entity instanceof Entity)) {
       throw new Error('Entity must be an instance of Entity');
     }
+    if (!this.DEBUG_ENABLED && entity.hasGroup('debug')) return -1;
 
     for (let i = 0; i < this.entities.length; i++) {
       if (this.entities[i] === undefined) {
@@ -193,15 +194,12 @@ class Engine {
 
   drawEntities() {
     const ctx = this.ctx;
-    const debug = this.DEBUG_ENABLED;
     const entities = this.entities;
     const len = entities.length;
     ctx.fillStyle = "#00000000";
 
     for (let i = 0; i < len; i++) {
-      const ent = entities[i];
-      if (!ent.draw || (!debug && ent.hasGroup('debug'))) continue;
-      ent.draw(ctx);
+      if (entities[i].draw) entities[i].draw(ctx);
     }
   }
 

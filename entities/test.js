@@ -2,13 +2,16 @@ import { Entity } from "./entity.js";
 
 import { ComponentRect } from "../component/rect.js";
 import { ComponentRenderRect, ComponentRenderText } from "../component/render.js";
-import {getInputMap, getKey, getMouse} from "../engine.js";
+import {
+  getMousePosition,
+  isActionPressed,
+} from '../engine.js'
 
 export class EntityTest extends Entity {
 
-  /**
-   * @param {x: number, y: number, width: number, height: number, color: string, text: string} Data Card data
-   */
+  // /**
+  //  * @param {x: number, y: number, width: number, height: number, color: string, text: string} Data Card data
+  //  */
   constructor({ x = 0, y = 0, width = 0, height = 0, color = '00000000', text = '' }) {
     super();
 
@@ -18,23 +21,17 @@ export class EntityTest extends Entity {
   }
 
   tick() {
-    const k = getKey().key;
+    const pos = getMousePosition();
 
-    const x = getMouse().x;
-    const y = getMouse().y;
-
-    if (this.rect.isInBounds(x, y)) {
-      if (k == 't') {
+    if (this.rect.isInBounds(pos.x, pos.y)) {
+      if (isActionPressed('left_mouse')) {
         this.rect.move(100, 0);
       }
     }
 
-    if (k == 'r') {
+    if (isActionPressed('right_mouse')) {
       this.rect.warp(100, 100);
     }
-
-    console.log(k)
-
   }
 
   draw(ctx) {

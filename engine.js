@@ -7,10 +7,16 @@ class Engine {
   DELTA_TIME = 0;
   FPS = 0;
   TPS = 0;
+
+  KEYS_PRESSED = {};
+  INPUT_ACTIONS = {};
+
   INPUT_MAP = {
     mousemove: { target: 'MOUSE', defaults: {x: 0, y: 0}, fields: e => ({ x: e.clientX, y: e.clientY }) },
-    keydown:   { target: 'KEY',   defaults: {key: '', code: '', repeat: false}, fields: e => ({ key: e.key, code: e.code, repeat: e.repeat }) },
-    keyup:     { target: 'KEY',   defaults: {key: '', code: '', repeat: false}, fields: () => ({ key: '', code: '', repeat: false }) },
+    mousedown: { target: 'MOUSE_BUTTON', defaults: {button: -1}, fields: e => ({ button: e.button }), pressed: e => `mouse${e.button}` },
+    mouseup:   { target: 'MOUSE_BUTTON', defaults: {button: -1}, fields: e => ({ button: e.button }), released: e => `mouse${e.button}` },
+    keydown:   { target: 'KEY', defaults: {key: '', code: '', repeat: false}, fields: e => ({ key: e.key, code: e.code, repeat: e.repeat }), pressed: e => e.code },
+    keyup:     { target: 'KEY', defaults: {key: '', code: '', repeat: false}, fields: () => ({ key: '', code: '', repeat: false }), released: e => e.code },
   }
 
   listeners = [];
@@ -62,6 +68,12 @@ class Engine {
     this.rebind();
   }
 
+  isActionPressed(action) {
+    const config = this.INPUT_ACTIONS[action];
+    if (!config) return false;
+    return config.keys.some(key => !!this.KEYS_PRESSED[key]);
+  }
+
   addKey(event, target, fields) {
     this.INPUT_MAP[event] = { target: target, fields: fields };
     this.rebind();
@@ -89,7 +101,11 @@ class Engine {
 
     for (const [event, config] of Object.entries(this.INPUT_MAP)) {
       this[config.target] = { ...config.defaults };
-      const handler = (e) => Object.assign(this[config.target], config.fields(e));
+      const handler = (e) => {
+        Object.assign(this[config.target], config.fields(e));
+        if (config.pressed) this.KEYS_PRESSED[config.pressed(e)] = true;
+        if (config.released) delete this.KEYS_PRESSED[config.released(e)];
+      };
       this.listeners.push({ event, handler });
       document.addEventListener(event, handler);
     }
@@ -97,16 +113,7 @@ class Engine {
 
   async loop(current_time = 0) {
     this.updateTimes(current_time);
-
-    this.physicsLoop().then();
-    await this.renderLoop();
-  }
-
-  async physicsLoop() {
     this.updatePhysics();
-  }
-
-  async renderLoop() {
     this.clear();
     this.drawEntities();
     requestAnimationFrame((time) => this.loop(time));
@@ -124,21 +131,22 @@ class Engine {
   }
 
   updatePhysics() {
-    while (this.accumulator >= this.PHYSICS_STEP) {
-      this.entities.forEach((object) => {
-        if (typeof object.tick === 'function') {
-          object.tick();
-        }
-      });
+    const entities = this.entities;
+    const len = entities.length;
+    const step = this.PHYSICS_STEP;
 
-      this.accumulator -= this.PHYSICS_STEP;
+    while (this.accumulator >= step) {
+      for (let i = 0; i < len; i++) {
+        if (entities[i].tick) entities[i].tick();
+      }
+      this.accumulator -= step;
       this.tick_counter++;
     }
 
     if (this.tps_timer >= 1000) {
       this.TPS = this.tick_counter;
       this.tick_counter = 0;
-      this.tps_timer %= 1000;
+      this.tps_timer -= 1000;
     }
   }
 
@@ -151,7 +159,7 @@ class Engine {
   }
 
   addEntity(entity) {
-    if (!entity instanceof Entity) {
+    if (!(entity instanceof Entity)) {
       throw new Error('Entity must be an instance of Entity');
     }
 
@@ -171,6 +179,10 @@ class Engine {
     return id;
   }
 
+  getEntitiesInGroup(group) {
+    return this.entities.filter(e => e.hasGroup(group));
+  }
+
   removeEntity(entity) {
     this.removeEntityByID(this.getEntityID(entity));
   }
@@ -180,11 +192,17 @@ class Engine {
   }
 
   drawEntities() {
-    this.entities.forEach(ent => {
-      if (typeof ent.draw === 'function') {
-        this.ctx.fillStyle = "#00000000";
-        ent.draw(this.ctx);
-      }});
+    const ctx = this.ctx;
+    const debug = this.DEBUG_ENABLED;
+    const entities = this.entities;
+    const len = entities.length;
+    ctx.fillStyle = "#00000000";
+
+    for (let i = 0; i < len; i++) {
+      const ent = entities[i];
+      if (!ent.draw || (!debug && ent.hasGroup('debug'))) continue;
+      ent.draw(ctx);
+    }
   }
 
   clear() {
@@ -198,22 +216,6 @@ async function init(width = 720, height = 1080, color = "#111", game = null) {
   if (typeof game.init === 'function') {
     game.init();
   }
-
-  // for (let i = 0; i < 1; i++) {
-  //
-  //   const card = new Card(
-  //     new Vec2d(i * 100, i * 100), new Vec2d(120, 120);
-  //   );
-  //
-  //   ENGINE.add_object(card);
-  // }
-  //
-  // const fps_counter = new DebugElementFPS(new Vec2d(50, 50), new Vec2d(50, 50));
-  // ENGINE.add_object(fps_counter);
-  // const tps_counter = new DebugElementTPS(new Vec2d(450, 100), new Vec2d(50, 50));
-  // ENGINE.add_object(tps_counter);
-  //
-  // await ENGINE.render_loop(performance.now());
 }
 
 const ENGINE = new Engine();
@@ -224,13 +226,21 @@ export function getPhysicsStep() { return ENGINE.PHYSICS_STEP; }
 export function getDeltaTime() { return ENGINE.DELTA_TIME; }
 export function getFps() { return ENGINE.FPS; }
 export function getTps() { return ENGINE.TPS; }
+
+// INPUT / OUTPUT
 export function getInputMap() { return ENGINE.INPUT_MAP; }
 
 export function getMouse() { return ENGINE.MOUSE; }
+export function getMousePosition() { return { x: getMouse().x, y: getMouse().y }; }
+
 export function getKey() { return ENGINE.KEY; }
 
 export function addKey(event, target, fields) { ENGINE.addKey(event, target, fields); }
 export function setKey(target, fields) { ENGINE.setKey(target, fields); }
+
+export function isActionPressed(action) { return ENGINE.isActionPressed(action); }
+export function setActions(actions) { ENGINE.INPUT_ACTIONS = actions; }
+//
 
 export async function runEngine(shutdown_promise) { await ENGINE.run(shutdown_promise); }
 export async function initGame(width = 720, height = 1080, color = "#111", game = null) { return init(width, height, color, game); }

@@ -13,15 +13,15 @@ export class UIPanel extends Entity {
     width = null,
     height = null,
     direction = 'vertical',
-    background = 'rgba(0,0,0,0.7)',
+    background = 'rgba(1,1,1,1.0)',
     padding = 5,
+    margin = 0,
     scrollable = false,
     alignX = 'left',
     alignY = 'top',
     spread = false,
     cellAlignX = 'left',
     cellAlignY = 'top',
-    transparent = false,
     offsetX = 0,
     offsetY = 0
   } = {}) {
@@ -34,8 +34,9 @@ export class UIPanel extends Entity {
     this.height = height;
     this.fixedHeight = height !== null;
     this.direction = direction;
-    this.background = transparent ? 'rgba(0,0,0,0)' : background;
+    this.background = background;
     this.padding = padding;
+    this.margin = margin;
     this.alignX = alignX;
     this.alignY = alignY;
     this.spread = spread;
@@ -76,7 +77,7 @@ export class UIPanel extends Entity {
       for (const child of this.children) {
         total += child.getMinWidth ? child.getMinWidth(ctx) : 50;
       }
-      return total + p * 2;
+      return total + this.margin * (this.children.length - 1) + p * 2;
     } else {
       let max = 0;
       for (const child of this.children) {
@@ -200,9 +201,12 @@ export class UIPanel extends Entity {
   draw(ctx) {
     const count = this.children.length;
     const p = this.padding;
+    const m = this.margin;
     const lineHeight = 20;
     const scrollbarWidth = this.scrollable ? 12 : 0;
+    const gapCount = Math.max(0, count - 1);
 
+    // Auto-size width for horizontal
     if (this.direction === 'horizontal' && count > 0 && !this.fixedWidth) {
       let maxChildWidth = 0;
       for (let i = 0; i < count; i++) {
@@ -210,15 +214,17 @@ export class UIPanel extends Entity {
           maxChildWidth = Math.max(maxChildWidth, this.children[i].getMinWidth(ctx));
         }
       }
-      this.width = maxChildWidth * count + p * 2 + scrollbarWidth;
+      this.width = maxChildWidth * count + m * gapCount + p * 2 + scrollbarWidth;
     }
 
+    // Auto-size height for horizontal
     if (this.direction === 'horizontal' && count > 0 && !this.fixedHeight) {
       this.height = lineHeight + p * 2;
     }
 
+    // Auto-size for vertical
     if (this.direction === 'vertical' && count > 0) {
-      this.contentHeight = count * lineHeight + p * 2;
+      this.contentHeight = count * lineHeight + m * gapCount + p * 2;
 
       if (!this.fixedHeight) {
         this.height = this.contentHeight;
@@ -235,6 +241,7 @@ export class UIPanel extends Entity {
       }
     }
 
+    // Apply anchor
     let drawX = this.x;
     let drawY = this.y;
 
@@ -295,16 +302,17 @@ export class UIPanel extends Entity {
       }
 
       if (this.spread) {
-        const cw = innerW / count;
+        const totalGap = m * gapCount;
+        const cw = (innerW - totalGap) / count;
         for (let i = 0; i < count; i++) {
           widths[i] = cw;
         }
-        totalWidth = innerW;
+        totalWidth = innerW - totalGap;
       }
 
       let startX = innerX;
-      if (this.alignX === 'center') startX = innerX + (innerW - totalWidth) / 2;
-      if (this.alignX === 'right') startX = innerX + innerW - totalWidth;
+      if (this.alignX === 'center') startX = innerX + (innerW - totalWidth - m * gapCount) / 2;
+      if (this.alignX === 'right') startX = innerX + innerW - totalWidth - m * gapCount;
 
       let startY = innerY;
       if (this.alignY === 'middle') startY = innerY + (innerH - lineHeight) / 2;
@@ -331,11 +339,12 @@ export class UIPanel extends Entity {
         } else {
           this.children[i].draw(ctx);
         }
-        cx += widths[i];
+        cx += widths[i] + m;
       }
     } else {
-      const ch = this.spread ? innerH / count : lineHeight;
-      const totalHeight = ch * count;
+      const totalGap = m * gapCount;
+      const ch = this.spread ? (innerH - totalGap) / count : lineHeight;
+      const totalHeight = ch * count + totalGap;
 
       let startY = innerY;
       if (this.alignY === 'middle') startY = innerY + (innerH - totalHeight) / 2;
@@ -348,7 +357,7 @@ export class UIPanel extends Entity {
         if (this.alignX === 'center') cx = innerX + (innerW - childW) / 2;
         if (this.alignX === 'right') cx = innerX + innerW - childW;
 
-        let cy = startY + i * ch + scrollOffset;
+        let cy = startY + i * (ch + m) + scrollOffset;
 
         const cell = this.getCellLayout(this.children[i], cx, cy, childW, ch, ctx);
 

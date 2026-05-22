@@ -2,7 +2,7 @@ export class Entity {
   tag = null;
   groups = [];
 
-  constructor (tag = null, groups = []) {
+  constructor ({ tag = null, groups = [] } = {}) {
     this.groups = groups;
     this.tag = tag;
   }
@@ -16,8 +16,7 @@ export class Entity {
   }
 
   hasGroup(group) {
-    if (this.groups.length < 1) { return false; }
-    return this.groups.find(g => g === group);
+    return this.groups.includes(group);
   }
 
   getGroups() {
@@ -32,7 +31,9 @@ export class Entity {
     this.groups = this.groups.filter(g => g !== group);
   }
 
-  tick() {}
+  input(event, e) {}
+
+  tick(delta_time) {}
 
   draw(ctx) {}
 }

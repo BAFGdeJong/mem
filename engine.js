@@ -588,7 +588,9 @@ class Engine {
 
     while (this.accumulator >= step) {
       for (let i = 0; i < len; i++) {
-        if (entities[i].tick && this.isEntityAllowed(entities[i])) entities[i].tick(step);
+        if (entities[i] && entities[i].tick && this.isEntityAllowed(entities[i])) {
+          entities[i].tick(step);
+        }
       }
       this.accumulator -= step;
       this.tick_counter++;
@@ -755,9 +757,9 @@ class Engine {
    */
   drawEntities() {
     if (this.drawOrderDirty) {
-      this.drawOrder = [...this.entities].sort((a, b) => {
-        const az = a._sceneInstance?.scene?.z ?? 0;
-        const bz = b._sceneInstance?.scene?.z ?? 0;
+      this.drawOrder = this.entities.filter(Boolean).sort((a, b) => {
+        const az = a._sceneInstance ? (a._sceneInstance.scene?.z ?? 0) : 999999;
+        const bz = b._sceneInstance ? (b._sceneInstance.scene?.z ?? 0) : 999999;
         return az - bz;
       });
       this.drawOrderDirty = false;
@@ -769,7 +771,9 @@ class Engine {
     ctx.fillStyle = "#00000000";
 
     for (let i = 0; i < len; i++) {
-      if (sorted[i].draw && this.isEntityAllowed(sorted[i])) sorted[i].draw(ctx);
+      if (sorted[i] && sorted[i].draw && this.isEntityAllowed(sorted[i])) {
+        sorted[i].draw(ctx);
+      }
     }
   }
 
@@ -924,7 +928,6 @@ export function getAsset(key) { return ENGINE.assetLoader.get(key); }
  */
 export function getLoadProgress() { return ENGINE.assetLoader.getProgress(); }
 
-// Default loaders — image, audio, json
 registerLoader('image', (src) => new Promise((resolve, reject) => {
   const img = new Image();
   img.onload = () => resolve(img);

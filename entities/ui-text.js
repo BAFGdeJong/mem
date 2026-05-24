@@ -38,7 +38,9 @@ export class UIText extends Entity {
     this.ditherSpacing = ditherSpacing;
     this.dispersion = dispersion;
 
-    this.textCanvas = null;
+    this.textCanvas = document.createElement('canvas');
+    this.finalCanvas = document.createElement('canvas');
+
     this.seedX = Math.floor(Math.random() * 10000);
     this.seedY = Math.floor(Math.random() * 10000);
 
@@ -83,10 +85,13 @@ export class UIText extends Entity {
       return;
     }
 
-    if (!this.textCanvas) this.textCanvas = document.createElement('canvas');
     if (this.textCanvas.width !== intW || this.textCanvas.height !== intH) {
       this.textCanvas.width = intW;
       this.textCanvas.height = intH;
+    }
+    if (this.finalCanvas.width !== intW || this.finalCanvas.height !== intH) {
+      this.finalCanvas.width = intW;
+      this.finalCanvas.height = intH;
     }
 
     const tctx = this.textCanvas.getContext('2d');
@@ -105,93 +110,129 @@ export class UIText extends Entity {
       tctx.fillText(text, 0, localTy);
     }
 
-    const textImageData = tctx.getImageData(0, 0, intW, intH);
-    const textData = textImageData.data;
-
-    const finalImageData = tctx.createImageData(intW, intH);
+    const textData = tctx.getImageData(0, 0, intW, intH).data;
+    const fctx = this.finalCanvas.getContext('2d');
+    const finalImageData = fctx.createImageData(intW, intH);
     const finalData = finalImageData.data;
-
-    const matrix = BAYER_4;
-    const matrixSize = 4;
-    const matrixMax = 16;
 
     const rgb1 = hex2Rgb(this.color);
     const rgb2 = hex2Rgb(this.ditherColor2);
-
     const tSec = performance.now() * 0.001;
     const speedFactor = this.ditherSpeed * 0.05;
+
+    const dispersionInverse = 1 - this.dispersion;
+    const dispersionValue = this.dispersion;
+    const alphaMultiplier = 1 + this.dispersion;
 
     const driftX = Math.floor(tSec * 15 * this.dirX);
     const driftY = Math.floor(tSec * 15 * this.dirY);
 
-    for (let y = 0; y < intH; y++) {
-      for (let x = 0; x < intW; x++) {
-        const i = (y * intW + x) * 4;
+    const dir = this.ditherDirection;
+    const spacing = this.ditherSpacing;
+    const harshness = this.ditherHarshness;
+    const seedX = this.seedX;
+    const seedY = this.seedY;
 
-        const textAlpha = textData[i + 3] / 255;
+    if (dir === 'brick') {
+      for (let y = 0; y < intH; y++) {
+        const rowOffset = y * intW;
+        const sy = y + seedY;
+        const rowOffsetShifted = Math.floor(sy / 4) % 2 === 0 ? 0 : 4;
+        const isRowMortar = (sy % 4 === 0);
 
-        if (textAlpha === 0 && this.dispersion === 0) {
-          finalData[i + 3] = 0;
-          continue;
+        for (let x = 0; x < intW; x++) {
+          const i = (rowOffset + x) * 4;
+          const textAlpha = textData[i + 3] / 255;
+
+          if (textAlpha === 0 && dispersionValue === 0) {
+            finalData[i + 3] = 0;
+            continue;
+          }
+
+          const sx = x + seedX;
+          const isMortar = isRowMortar || ((sx + rowOffsetShifted) % 8 === 0);
+          const pick = isMortar ? rgb1 : rgb2;
+
+          finalData[i]     = pick.r;
+          finalData[i + 1] = pick.g;
+          finalData[i + 2] = pick.b;
+          finalData[i + 3] = Math.max(0, Math.min(255, textAlpha * 255 * alphaMultiplier));
         }
+      }
+    } else if (dir === 'stars') {
+      for (let y = 0; y < intH; y++) {
+        const rowOffset = y * intW;
+        const sy = y + seedY;
+        const ny = Math.floor(sy / 6);
 
-        let pick = rgb1;
-        const sx = x + this.seedX;
-        const sy = y + this.seedY;
+        for (let x = 0; x < intW; x++) {
+          const i = (rowOffset + x) * 4;
+          const textAlpha = textData[i + 3] / 255;
 
-        if (this.ditherDirection === 'brick') {
-          const brickWidth = 8; const brickHeight = 4;
-          const rowOffset = (Math.floor(sy / brickHeight) % 2 === 0) ? 0 : Math.floor(brickWidth / 2);
-          const shiftedX = sx + rowOffset;
-          const isMortar = (sy % brickHeight === 0) || (shiftedX % brickWidth === 0);
-          pick = isMortar ? rgb1 : rgb2;
+          if (textAlpha === 0 && dispersionValue === 0) {
+            finalData[i + 3] = 0;
+            continue;
+          }
 
-        } else if (this.ditherDirection === 'stars') {
-          const nx = Math.floor(sx / 12); const ny = Math.floor(sy / 6);
+          const sx = x + seedX;
+          const nx = Math.floor(sx / 12);
           const clusterNoise = Math.abs(Math.sin(nx * 127.1 + ny * 311.7) * 43758.5453) % 1;
 
           let isStar = false;
           if (clusterNoise > 0.50) {
-            const cellSizeA = 5;
-            const cellXA = Math.floor(sx / cellSizeA); const cellYA = Math.floor(sy / cellSizeA);
+            const cellXA = Math.floor(sx / 5); const cellYA = Math.floor(sy / 5);
             const hashA = Math.abs(Math.sin(cellXA * 57.3 + cellYA * 23.9) * 7531.1235) % 1;
-            if (hashA > 0.90 && sx % cellSizeA === Math.floor(hashA * cellSizeA) && sy % cellSizeA === Math.floor((hashA * 9) % 1 * cellSizeA)) {
+            if (hashA > 0.90 && sx % 5 === Math.floor(hashA * 5) && sy % 5 === Math.floor((hashA * 9) % 1 * 5)) {
               isStar = true;
             }
           }
-          pick = isStar ? rgb2 : rgb1;
+          const pick = isStar ? rgb2 : rgb1;
 
-        } else {
-          let rawValue;
-          if (this.ditherDirection === 'horizontal') {
-            rawValue = Math.sin((x * this.ditherSpacing) + (tSec * speedFactor));
-          } else if (this.ditherDirection === 'vertical') {
-            rawValue = Math.sin((y * this.ditherSpacing) + (tSec * speedFactor));
-          } else if (this.ditherDirection === 'diagonal') {
-            rawValue = Math.sin(((x + y) * this.ditherSpacing * 0.7) + (tSec * speedFactor));
-          } else {
-            rawValue = 0;
+          finalData[i]     = pick.r;
+          finalData[i + 1] = pick.g;
+          finalData[i + 2] = pick.b;
+          finalData[i + 3] = Math.max(0, Math.min(255, textAlpha * 255 * alphaMultiplier));
+        }
+      }
+    } else {
+      const isHoriz = dir === 'horizontal';
+      const isVert = dir === 'vertical';
+      const isDiag = dir === 'diagonal';
+      const timeOffset = tSec * speedFactor;
+
+      for (let y = 0; y < intH; y++) {
+        const rowOffset = y * intW;
+        const ySpacingOffset = y * spacing;
+        const bayerRow = BAYER_4[y % 4];
+
+        for (let x = 0; x < intW; x++) {
+          const i = (rowOffset + x) * 4;
+          const textAlpha = textData[i + 3] / 255;
+
+          if (textAlpha === 0 && dispersionValue === 0) {
+            finalData[i + 3] = 0;
+            continue;
           }
 
-          let adjusted = rawValue * this.ditherHarshness;
+          let rawValue = 0;
+          if (isHoriz) rawValue = Math.sin((x * spacing) + timeOffset);
+          else if (isVert) rawValue = Math.sin(ySpacingOffset + timeOffset);
+          else if (isDiag) rawValue = Math.sin(((x + y) * spacing * 0.7) + timeOffset);
 
-          let baseT = 0.5 + 0.5 * Math.max(-1, Math.min(1, adjusted));
+          let baseT = 0.5 + 0.5 * Math.max(-1, Math.min(1, rawValue * harshness));
+          let t = baseT * dispersionInverse + (textAlpha * baseT) * dispersionValue;
 
-          let t = baseT * (1 - this.dispersion) + (textAlpha * baseT) * this.dispersion;
+          const pick = t > (bayerRow[x % 4] / 16) ? rgb2 : rgb1;
 
-          const threshold = matrix[y % matrixSize][x % matrixSize] / matrixMax;
-          pick = t > threshold ? rgb2 : rgb1;
+          finalData[i]     = pick.r;
+          finalData[i + 1] = pick.g;
+          finalData[i + 2] = pick.b;
+          finalData[i + 3] = Math.max(0, Math.min(255, textAlpha * 255 * alphaMultiplier));
         }
-
-        finalData[i]     = pick.r;
-        finalData[i + 1] = pick.g;
-        finalData[i + 2] = pick.b;
-
-        finalData[i + 3] = Math.max(0, Math.min(255, textAlpha * 255 * (1 + this.dispersion)));
       }
     }
 
-    tctx.putImageData(finalImageData, 0, 0);
-    ctx.drawImage(this.textCanvas, Math.round(this.lx), Math.round(this.ly));
+    fctx.putImageData(finalImageData, 0, 0);
+    ctx.drawImage(this.finalCanvas, Math.round(this.lx), Math.round(this.ly));
   }
 }

@@ -1,17 +1,19 @@
 import { Scene } from './scene.js';
 import { UIPanel } from '../entities/ui-panel.js';
 import * as engine from '../engine.js';
-import { UIButton } from '../entities/ui-button.js'
-import {UIText} from "../entities/ui-text.js";
+import { UIButton } from '../entities/ui-button.js';
+import { performSceneTransition } from '../perform-scene-transition.js';
 
 export class MainMenu extends Scene {
   constructor() {
-    super('main-menu', { z: 999 });
+    super('main-menu', { z: 0 });
   }
 
   async preload() {}
 
   async init() {
+    this.children = [];
+
     const panel = new UIPanel({
       tag: 'main-menu-panel',
       margin: 5,
@@ -26,16 +28,38 @@ export class MainMenu extends Scene {
       height: 300,
       spread: true,
     })
-    .add(new UIButton('PLAY', () => {}, {
+    .add(new UIButton('PLAY', () => { performSceneTransition('main-menu', 'game') }, {
+      ditherOnHoverOnly: true,
+      ditherSpeed: 100,
+      ditherSpacing: 0,
+      ditherHarshness: 0.3,
       ditherSize: 4,
-      ditherDirection: 'diagonal',
+      ditherDirection: 'horizontal',
       font: '48px monospace',
     }))
-    .add(new UIButton('SETTINGS', () => engine.addScene('settings'), {font: '48px monospace'}))
-    .add(new UIButton('EXIT', () => engine.shutdown(), {font: '48px monospace'}));
+    .add(new UIButton('SETTINGS', () => engine.addScene('settings'), {
+      ditherOnHoverOnly: true,
+      ditherSpeed: 100,
+      ditherSpacing: 0,
+      ditherHarshness: 0.3,
+      ditherSize: 4,
+      ditherDirection: 'horizontal',
+      font: '48px monospace',
+    }))
+    .add(new UIButton('EXIT', () => engine.shutdown(), {
+      ditherOnHoverOnly: true,
+      ditherSpeed: 100,
+      ditherSpacing: 0,
+      ditherHarshness: 0.3,
+      ditherSize: 4,
+      ditherDirection: 'horizontal',
+      font: '48px monospace',
+    }));
 
-    engine.addEntity(panel);
+    this.children.push(panel);
   }
 
-  async exit() {}
+  async exit() {
+    this.children = [];
+  }
 }

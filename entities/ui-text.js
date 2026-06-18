@@ -51,7 +51,7 @@ export class UIText extends Entity {
 
   getMinWidth(ctx) {
     ctx.font = this.font;
-    return ctx.measureText(this.getText()).width + 10;
+    return ctx.measureText(this.getText()).width + 20;
   }
 
   getMinHeight() {

@@ -1,10 +1,31 @@
 <!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
-    <title></title>
+    <title>Memory Game - Special Edition</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0a0a0e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-image: radial-gradient(circle at center, #1a1a2e 0%, #0a0a0e 100%);
+        }
+        canvas {
+            border: 2px solid #333344;
+            box-shadow: 0 0 40px rgba(0,0,0,0.8), 0 0 100px rgba(0, 255, 204, 0.05);
+            border-radius: 8px;
+        }
+    </style>
 </head>
 <body>
     <script type="module">
         import * as main from './main.js';
     </script>
 </body>
+</html>

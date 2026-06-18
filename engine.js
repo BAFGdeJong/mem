@@ -507,7 +507,11 @@ class Engine {
     const len = entities.length;
     for (let i = 0; i < len; i++) {
       if (entities[i].input && this.isEntityAllowed(entities[i])) {
-        entities[i].input(event, e);
+        try {
+          entities[i].input(event, e);
+        } catch (err) {
+          console.error(`Error in entity.input:`, err, entities[i]);
+        }
       }
     }
   }
@@ -758,8 +762,16 @@ class Engine {
   drawEntities() {
     if (this.drawOrderDirty) {
       this.drawOrder = this.entities.filter(Boolean).sort((a, b) => {
-        const az = a._sceneInstance ? (a._sceneInstance.scene?.z ?? 0) : 999999;
-        const bz = b._sceneInstance ? (b._sceneInstance.scene?.z ?? 0) : 999999;
+        const azScene = a._sceneInstance ? (a._sceneInstance.scene?.z ?? 0) : 999999;
+        const bzScene = b._sceneInstance ? (b._sceneInstance.scene?.z ?? 0) : 999999;
+        
+        if (azScene !== bzScene) {
+            return azScene - bzScene;
+        }
+        
+        // If in same scene (or no scene), sort by entity z
+        const az = a.z ?? 0;
+        const bz = b.z ?? 0;
         return az - bz;
       });
       this.drawOrderDirty = false;
@@ -793,8 +805,11 @@ class Engine {
    * Clears the entire canvas with the background color.
    */
   clear() {
-    this.ctx.fillStyle = this.background_color;
-    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    if (this.background_color !== 'transparent') {
+      this.ctx.fillStyle = this.background_color;
+      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    }
   }
 }
 
@@ -928,7 +943,8 @@ export function getAsset(key) { return ENGINE.assetLoader.get(key); }
  */
 export function getLoadProgress() { return ENGINE.assetLoader.getProgress(); }
 
-registerLoader('image', (src) => new Promise((resolve, reject) => {
+
+registerLoader('texture', (src) => new Promise((resolve, reject) => {
   const img = new Image();
   img.onload = () => resolve(img);
   img.onerror = () => reject(new Error(`Failed: ${src}`));

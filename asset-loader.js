@@ -4,9 +4,19 @@ export class AssetLoader {
   loaded = 0;
   total = 0;
   onProgress = null;
+  callbacks = {};
 
   registerLoader(type, loaderFn) {
     this.loaders[type] = loaderFn;
+  }
+
+  onLoaded(key, callback) {
+    if (this.assets[key] && this.assets[key].loaded) {
+      callback(this.assets[key].data);
+    } else {
+      if (!this.callbacks[key]) this.callbacks[key] = [];
+      this.callbacks[key].push(callback);
+    }
   }
 
   register(key, src, type) {
@@ -35,6 +45,12 @@ export class AssetLoader {
     asset.data = await loader(asset.src);
     asset.loaded = true;
     this.loaded++;
+
+    if (this.callbacks[key]) {
+      this.callbacks[key].forEach(cb => cb(asset.data));
+      delete this.callbacks[key];
+    }
+
     this.onProgress?.(this.loaded, this.total, key);
   }
 

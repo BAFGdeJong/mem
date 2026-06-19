@@ -12,13 +12,27 @@ export function lerp(a, b, t) {
   return (1-t) * a + t * b;
 }
 
+export function clamp(min, value, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
 export function hex2Rgb(hex) {
-  const v = parseInt(hex.replace('#', ''), 16);
+  let h = hex.replace('#', '');
+  if (h.length === 3) h = h.split('').map(c => c + c).join('');
+  if (h.length === 8) h = h.slice(0, 6);
+  const v = parseInt(h, 16);
   return {
     r: (v >> 16) & 255,
     g: (v >> 8) & 255,
     b: v & 255,
   };
+}
+
+export function hexAlpha(hex) {
+  const h = hex.replace('#', '');
+  if (h.length === 8) return parseInt(h.slice(6, 8), 16) / 255;
+  if (h.length === 4) return parseInt(h[3] + h[3], 16) / 255;
+  return 1;
 }
 
 export function rgb2hex(str) {

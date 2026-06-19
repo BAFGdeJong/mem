@@ -11,11 +11,7 @@ export class SpecialCardBomb extends CardEffect {
     activate(card, game, board) {
         board.shake(1000, 20);
         
-        const snd = engine.getAsset('bomb_snd');
-        if (snd) {
-            snd.currentTime = 0;
-            snd.play().catch(() => {});
-        }
+        engine.playSound('bomb_snd');
 
         const neighbours = board.getNeighbours(card.index, this.radius);
         const cardsToShuffle = [];

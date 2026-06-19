@@ -3,7 +3,8 @@ import { UIPanel } from '../entities/ui-panel.js';
 import * as engine from '../engine.js';
 import { UIButton } from '../entities/ui-button.js';
 import { performSceneTransition } from '../perform-scene-transition.js';
-import {UIText} from "../entities/ui-text.js";
+import { UIText } from "../entities/ui-text.js";
+import { clamp } from "../game_math.js";
 
 export class MainMenu extends Scene {
   constructor() {
@@ -14,64 +15,59 @@ export class MainMenu extends Scene {
 
   async init() {
     this.children = [];
-    
+
     this.backgroundColor = '#0f0f1b';
 
-    const screenSize = engine.getScreenSize();
-
-    const title = new UIText("MEMORY", {
-        font: 'bold 96px "Trebuchet MS", sans-serif',
+    this.title = new UIText("MEMORY", {
+        font: 'bold 72px "Trebuchet MS", sans-serif',
         color: '#ffffff',
         align: 'center'
     });
-    title.layout(screenSize.width/2 - 400, screenSize.height/2 - 280, 800, 100);
 
-    const subtitle = new UIText("SPECIAL EDITION", {
-        font: 'bold 32px "Trebuchet MS", sans-serif',
+    this.subtitle = new UIText("MADNESSSSSSS", {
+        font: 'bold 26px "Trebuchet MS", sans-serif',
         color: '#00ffcc',
         align: 'center'
     });
-    subtitle.layout(screenSize.width/2 - 400, screenSize.height/2 - 180, 800, 50);
 
-    this.children.push(title);
-    this.children.push(subtitle);
-
-    const panel = new UIPanel({
+    this.panel = new UIPanel({
       tag: 'main-menu-panel',
-      x: screenSize.width / 2 - 200,
-      y: screenSize.height / 2 - 50,
-      width: 400,
-      height: 350,
+      x: 0,
+      y: 0,
+      width: 10,
+      height: 10,
       direction: 'vertical',
       alignX: 'center',
       alignY: 'center',
       background: 'rgba(255, 255, 255, 0.02)',
-      padding: 30,
-      margin: 50
-    })
-    .add(new UIButton('START GAME', () => { performSceneTransition('main-menu', 'game') }, {
+      padding: 20,
+      margin: 24
+    });
+
+    this.startBtn = new UIButton('START GAME', () => { performSceneTransition('main-menu', 'game') }, {
       ditherOnHoverOnly: true,
       ditherSpeed: 200,
-      font: 'bold 44px "Trebuchet MS", sans-serif',
+      font: 'bold 40px "Trebuchet MS", sans-serif',
       color: '#fff',
-      hoverColor: '#00ffcc',
+      ditherColors: ['#00ffcc', '#ffffff00'],
       textDitherEnabled: true,
-    }))
-    .add(new UIButton('EXIT', () => engine.shutdown(), {
+    });
+
+    this.exitBtn = new UIButton('EXIT', () => engine.shutdown(), {
       ditherOnHoverOnly: true,
       ditherSpeed: 200,
-      font: 'bold 32px "Trebuchet MS", sans-serif',
+      font: 'bold 30px "Trebuchet MS", sans-serif',
       color: '#666',
-      hoverColor: '#ff4444',
+      ditherColors: ['#00ffcc', '#ffffff00'],
       textDitherEnabled: true,
-    }));
+    });
 
-    this.children.push(panel);
+    this.panel.add(this.startBtn).add(this.exitBtn);
 
-    const debugToggle = new UIPanel({
+    this.debugToggle = new UIPanel({
         tag: 'ui-debug-toggle',
-        x: engine.getScreenSize().width - 60,
-        y: 20,
+        x: 0,
+        y: 0,
         width: 40,
         height: 40,
         background: 'rgba(0,0,0,0.3)'
@@ -81,7 +77,52 @@ export class MainMenu extends Scene {
         color: '#666',
         hoverColor: '#fff'
     }));
-    this.children.push(debugToggle);
+
+    this.children.push(this.title);
+    this.children.push(this.subtitle);
+    this.children.push(this.panel);
+    this.children.push(this.debugToggle);
+
+    const screen = engine.getScreenSize();
+    this.layout(screen.width, screen.height);
+  }
+
+  layout(W, H) {
+    const scale = clamp(0.7, Math.min(W, H) / 480, 1.8);
+    const cx = W / 2;
+
+    const titleSize = Math.round(72 * scale);
+    const subSize = Math.round(26 * scale);
+    this.title.font = `bold ${titleSize}px "Trebuchet MS", sans-serif`;
+    this.subtitle.font = `bold ${subSize}px "Trebuchet MS", sans-serif`;
+
+    const textW = Math.min(W * 0.92, 900);
+    const titleY = H * 0.16;
+    this.title.layout(cx - textW / 2, titleY, textW, titleSize * 1.25);
+    this.subtitle.layout(cx - textW / 2, titleY + titleSize * 1.35, textW, subSize * 1.5);
+
+    this.startBtn.text.font = `bold ${Math.round(40 * scale)}px "Trebuchet MS", sans-serif`;
+    this.exitBtn.text.font = `bold ${Math.round(30 * scale)}px "Trebuchet MS", sans-serif`;
+
+    const panelW = Math.min(W * 0.82, 440);
+    const panelH = Math.round(230 * scale);
+    this.panel.x = cx - panelW / 2;
+    this.panel.y = H * 0.46;
+    this.panel.width = panelW;
+    this.panel.height = panelH;
+    this.panel.fixedWidth = true;
+    this.panel.fixedHeight = true;
+
+    const d = Math.round(40 * scale);
+    const m = Math.round(Math.min(W, H) * 0.04);
+    this.debugToggle.x = W - m - d;
+    this.debugToggle.y = m;
+    this.debugToggle.width = d;
+    this.debugToggle.height = d;
+  }
+
+  onResize(W, H) {
+    this.layout(W, H);
   }
 
   async exit() {

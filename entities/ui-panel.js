@@ -88,12 +88,28 @@ export class UIPanel extends Entity {
     }
   }
 
+  getMinHeight() {
+    if (this.fixedHeight) return this.height;
+
+    const count = this.children.length;
+    const p = this.padding;
+    if (count === 0) return p * 2;
+
+    const gapCount = Math.max(0, count - 1);
+    const rows = this.children.map(c => Math.max(20, c.getMinHeight ? c.getMinHeight() : 20));
+
+    if (this.direction === 'horizontal') {
+      return Math.max(...rows) + p * 2;
+    }
+    return rows.reduce((a, b) => a + b, 0) + this.margin * gapCount + p * 2;
+  }
+
   getCellLayout(child, cx, cy, cw, ch, ctx) {
     let x = cx;
     let y = cy;
     let w = cw;
     let h = ch;
-    const lineHeight = 20;
+    const lineHeight = Math.max(20, child.getMinHeight ? child.getMinHeight() : 20);
 
     if (this.cellAlignX !== 'left' && child.getMinWidth) {
       const childW = child.getMinWidth(ctx);
@@ -206,6 +222,10 @@ export class UIPanel extends Entity {
     const scrollbarWidth = this.scrollable ? 12 : 0;
     const gapCount = Math.max(0, count - 1);
 
+    const rowHeights = this.children.map(c => Math.max(lineHeight, c.getMinHeight ? c.getMinHeight() : lineHeight));
+    const rowHeightsTotal = rowHeights.reduce((a, b) => a + b, 0);
+    const maxChildHeight = count > 0 ? Math.max(lineHeight, ...rowHeights) : lineHeight;
+
     // Auto-size width for horizontal
     if (this.direction === 'horizontal' && count > 0 && !this.fixedWidth) {
       let maxChildWidth = 0;
@@ -219,12 +239,12 @@ export class UIPanel extends Entity {
 
     // Auto-size height for horizontal
     if (this.direction === 'horizontal' && count > 0 && !this.fixedHeight) {
-      this.height = lineHeight + p * 2;
+      this.height = maxChildHeight + p * 2;
     }
 
     // Auto-size for vertical
     if (this.direction === 'vertical' && count > 0) {
-      this.contentHeight = count * lineHeight + m * gapCount + p * 2;
+      this.contentHeight = rowHeightsTotal + m * gapCount + p * 2;
 
       if (!this.fixedHeight) {
         this.height = this.contentHeight;
@@ -315,13 +335,13 @@ export class UIPanel extends Entity {
       if (this.alignX === 'right') startX = innerX + innerW - totalWidth - m * gapCount;
 
       let startY = innerY;
-      if (this.alignY === 'middle') startY = innerY + (innerH - lineHeight) / 2;
-      if (this.alignY === 'bottom') startY = innerY + innerH - lineHeight;
+      if (this.alignY === 'middle') startY = innerY + (innerH - maxChildHeight) / 2;
+      if (this.alignY === 'bottom') startY = innerY + innerH - maxChildHeight;
 
       let cx = startX;
       for (let i = 0; i < count; i++) {
         let cy = startY + scrollOffset;
-        let ch = this.spread ? innerH : lineHeight;
+        let ch = this.spread ? innerH : maxChildHeight;
 
         const cell = this.getCellLayout(this.children[i], cx, cy, widths[i], ch, ctx);
 
@@ -343,21 +363,23 @@ export class UIPanel extends Entity {
       }
     } else {
       const totalGap = m * gapCount;
-      const ch = this.spread ? (innerH - totalGap) / count : lineHeight;
-      const totalHeight = ch * count + totalGap;
+      const spreadCh = (innerH - totalGap) / count;
+      const totalHeight = this.spread ? innerH : rowHeightsTotal + totalGap;
 
       let startY = innerY;
       if (this.alignY === 'middle') startY = innerY + (innerH - totalHeight) / 2;
       if (this.alignY === 'bottom') startY = innerY + innerH - totalHeight;
 
+      let cursorY = startY;
       for (let i = 0; i < count; i++) {
+        const ch = this.spread ? spreadCh : rowHeights[i];
         let cx = innerX;
         let childW = this.spread ? innerW : (this.children[i].getMinWidth ? this.children[i].getMinWidth(ctx) : innerW);
 
         if (this.alignX === 'center') cx = innerX + (innerW - childW) / 2;
         if (this.alignX === 'right') cx = innerX + innerW - childW;
 
-        let cy = startY + i * (ch + m) + scrollOffset;
+        let cy = cursorY + scrollOffset;
 
         const cell = this.getCellLayout(this.children[i], cx, cy, childW, ch, ctx);
 
@@ -375,6 +397,8 @@ export class UIPanel extends Entity {
         } else {
           this.children[i].draw(ctx);
         }
+
+        cursorY += ch + m;
       }
     }
 

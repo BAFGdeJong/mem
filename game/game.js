@@ -2,6 +2,10 @@ import { Entity } from "../entities/entity.js";
 import * as engine from "../engine.js";
 
 export class Game extends Entity {
+    static TIME_BONUS_MAX = 250;
+    static TIME_BONUS_PER_SECOND = 2.5;
+    static TURN_PENALTY = 2;
+
     constructor() {
         super();
 
@@ -13,8 +17,23 @@ export class Game extends Entity {
 
         this.score = 0;
         this.turns = 0;
+        this.elapsed = 0;
+        this.started = false;
         this.gameOver = false;
         this.onGameOver = null;
+    }
+
+    getTimeBonus() {
+        const seconds = this.elapsed / 1000;
+        return Math.max(0, Math.round(Game.TIME_BONUS_MAX - seconds * Game.TIME_BONUS_PER_SECOND));
+    }
+
+    getTurnPenalty() {
+        return this.turns * Game.TURN_PENALTY;
+    }
+
+    getFinalScore() {
+        return Math.max(0, this.score + this.getTimeBonus() - this.getTurnPenalty());
     }
 
     setBoard(board) {
@@ -37,7 +56,11 @@ export class Game extends Entity {
             if (this.onGameOver) {
                 this.onGameOver({
                     score: this.score,
-                    turns: this.turns
+                    turns: this.turns,
+                    time: this.elapsed,
+                    timeBonus: this.getTimeBonus(),
+                    turnPenalty: this.getTurnPenalty(),
+                    finalScore: this.getFinalScore()
                 });
             }
         }
@@ -80,11 +103,9 @@ export class Game extends Entity {
             }
         }
 
-        const snd = engine.getAsset('flip_snd');
-        if (snd) {
-            snd.currentTime = 0;
-            snd.play().catch(() => {});
-        }
+        this.started = true;
+
+        engine.playSound('flip_snd');
 
         card.onClick(this, this.board);
         this.inputLockout = 250;
@@ -151,11 +172,7 @@ export class Game extends Entity {
                 }
             }
 
-            const snd = engine.getAsset('match_snd');
-            if (snd) {
-                snd.currentTime = 0;
-                snd.play().catch(() => {});
-            }
+            engine.playSound('match_snd');
 
             if (this.board) {
                 this.board.shake(300, 5);
@@ -183,6 +200,10 @@ export class Game extends Entity {
     }
 
     tick(deltaTime) {
+        if (this.started && !this.gameOver) {
+            this.elapsed += deltaTime;
+        }
+
         if (this.inputLockout > 0) {
             this.inputLockout -= deltaTime;
         }

@@ -1,5 +1,5 @@
 import { Entity } from './entity.js';
-import { hex2Rgb } from "../game_math.js";
+import { hex2Rgb, hexAlpha } from "../game_math.js";
 
 const BAYER_4 = [
   [ 0,  8,  2, 10],
@@ -55,7 +55,9 @@ export class UIText extends Entity {
   }
 
   getMinHeight() {
-    return parseInt(this.font, 10) + 10;
+    const match = /(\d+(?:\.\d+)?)px/.exec(this.font);
+    const size = match ? parseFloat(match[1]) : 14;
+    return size + 10;
   }
 
   layout(x, y, w, h) {
@@ -117,6 +119,8 @@ export class UIText extends Entity {
 
     const rgb1 = hex2Rgb(this.color);
     const rgb2 = hex2Rgb(this.ditherColor2);
+    const a1 = hexAlpha(this.color);
+    const a2 = hexAlpha(this.ditherColor2);
     const tSec = performance.now() * 0.001;
     const speedFactor = this.ditherSpeed * 0.05;
 
@@ -152,11 +156,12 @@ export class UIText extends Entity {
           const sx = x + seedX;
           const isMortar = isRowMortar || ((sx + rowOffsetShifted) % 8 === 0);
           const pick = isMortar ? rgb1 : rgb2;
+          const pickA = isMortar ? a1 : a2;
 
           finalData[i]     = pick.r;
           finalData[i + 1] = pick.g;
           finalData[i + 2] = pick.b;
-          finalData[i + 3] = Math.max(0, Math.min(255, textAlpha * 255 * alphaMultiplier));
+          finalData[i + 3] = Math.max(0, Math.min(255, textAlpha * 255 * alphaMultiplier * pickA));
         }
       }
     } else if (dir === 'stars') {
@@ -187,11 +192,12 @@ export class UIText extends Entity {
             }
           }
           const pick = isStar ? rgb2 : rgb1;
+          const pickA = isStar ? a2 : a1;
 
           finalData[i]     = pick.r;
           finalData[i + 1] = pick.g;
           finalData[i + 2] = pick.b;
-          finalData[i + 3] = Math.max(0, Math.min(255, textAlpha * 255 * alphaMultiplier));
+          finalData[i + 3] = Math.max(0, Math.min(255, textAlpha * 255 * alphaMultiplier * pickA));
         }
       }
     } else {
@@ -222,12 +228,14 @@ export class UIText extends Entity {
           let baseT = 0.5 + 0.5 * Math.max(-1, Math.min(1, rawValue * harshness));
           let t = baseT * dispersionInverse + (textAlpha * baseT) * dispersionValue;
 
-          const pick = t > (bayerRow[x % 4] / 16) ? rgb2 : rgb1;
+          const useColor2 = t > (bayerRow[x % 4] / 16);
+          const pick = useColor2 ? rgb2 : rgb1;
+          const pickA = useColor2 ? a2 : a1;
 
           finalData[i]     = pick.r;
           finalData[i + 1] = pick.g;
           finalData[i + 2] = pick.b;
-          finalData[i + 3] = Math.max(0, Math.min(255, textAlpha * 255 * alphaMultiplier));
+          finalData[i + 3] = Math.max(0, Math.min(255, textAlpha * 255 * alphaMultiplier * pickA));
         }
       }
     }

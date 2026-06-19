@@ -132,6 +132,11 @@ class Engine {
    */
   shutdown() {
     this.reset_listeners();
+    if (this._onWindowResize) {
+      window.removeEventListener('resize', this._onWindowResize);
+      window.removeEventListener('orientationchange', this._onWindowResize);
+      this._onWindowResize = null;
+    }
     this.entities = [];
     this.drawOrder = [];
     this.ctx = null;
@@ -155,14 +160,47 @@ class Engine {
   init(width, height, color) {
     this.canvas = document.createElement('canvas');
     this.ctx = this.canvas.getContext('2d');
-    this.canvas.width = width;
-    this.canvas.height = height;
+    this.fullscreen = (width == null || height == null);
+    if (this.fullscreen) {
+      this.canvas.width = window.innerWidth;
+      this.canvas.height = window.innerHeight;
+    } else {
+      this.canvas.width = width;
+      this.canvas.height = height;
+    }
     this.background_color = color;
     this.ctx.fillStyle = color;
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     document.body.style.margin = '0';
     document.body.appendChild(this.canvas);
     this.rebind();
+
+    if (this.fullscreen) {
+      this._onWindowResize = () => {
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+        this.handleResize();
+      };
+      window.addEventListener('resize', this._onWindowResize);
+      window.addEventListener('orientationchange', this._onWindowResize);
+    }
+  }
+
+  /**
+   * Propagates a viewport resize to every active scene that defines
+   * an onResize(width, height) hook, so layouts can reflow.
+   */
+  handleResize() {
+    const { width, height } = this.getScreenSize();
+    for (const inst of this.activeScenes) {
+      if (inst.scene.onResize) {
+        try {
+          inst.scene.onResize(width, height);
+        } catch (err) {
+          console.error('Error in scene.onResize:', err, inst.scene);
+        }
+      }
+    }
   }
 
   /* ──────────────────────────────────────────────
@@ -492,6 +530,41 @@ class Engine {
       };
       this.listeners.push({ event, handler });
       document.addEventListener(event, handler);
+    }
+
+    const getTouch = (e) => e.touches[0] || e.changedTouches[0];
+    const touchHandlers = {
+      touchstart: (e) => {
+        const t = getTouch(e);
+        if (!t) return;
+        this.MOUSE.x = t.clientX;
+        this.MOUSE.y = t.clientY;
+        this.MOUSE_BUTTON.button = 0;
+        this.KEYS_PRESSED['mouse0'] = true;
+        this.processInput('mousemove', { clientX: t.clientX, clientY: t.clientY, button: 0 });
+        this.processInput('mousedown', { button: 0 });
+        e.preventDefault();
+      },
+      touchmove: (e) => {
+        const t = getTouch(e);
+        if (!t) return;
+        this.MOUSE.x = t.clientX;
+        this.MOUSE.y = t.clientY;
+        this.processInput('mousemove', { clientX: t.clientX, clientY: t.clientY, button: 0 });
+        e.preventDefault();
+      },
+      touchend: (e) => {
+        this.MOUSE_BUTTON.button = -1;
+        delete this.KEYS_PRESSED['mouse0'];
+        this.processInput('mouseup', { button: 0 });
+        e.preventDefault();
+      },
+    };
+    touchHandlers.touchcancel = touchHandlers.touchend;
+
+    for (const [event, handler] of Object.entries(touchHandlers)) {
+      this.listeners.push({ event, handler });
+      document.addEventListener(event, handler, { passive: false });
     }
   }
 
@@ -942,6 +1015,35 @@ export function getAsset(key) { return ENGINE.assetLoader.get(key); }
  * @returns {number} Progress from 0 to 1
  */
 export function getLoadProgress() { return ENGINE.assetLoader.getProgress(); }
+
+/**
+ * Plays a loaded audio asset as a short one-shot.
+ * Restarts from the beginning on every call (so rapid triggers
+ * overwrite the currently playing instance instead of overlapping),
+ * and automatically stops after `duration` seconds.
+ *
+ * @param {string} key        - Audio asset key
+ * @param {number} [duration] - Playback length in seconds
+ */
+export function playSound(key, duration = 0.12) {
+  const snd = ENGINE.assetLoader.get(key);
+  if (!snd) return;
+
+  if (snd._stopTimer) {
+    clearTimeout(snd._stopTimer);
+    snd._stopTimer = null;
+  }
+
+  snd.pause();
+  snd.currentTime = 0;
+  snd.play().catch(() => {});
+
+  snd._stopTimer = setTimeout(() => {
+    snd.pause();
+    snd.currentTime = 0;
+    snd._stopTimer = null;
+  }, duration * 1000);
+}
 
 
 registerLoader('texture', (src) => new Promise((resolve, reject) => {

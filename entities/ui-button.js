@@ -27,6 +27,7 @@ export class UIButton extends Entity {
 
     this.textDitherEnabled = textDitherEnabled;
     this.ditherOnHoverOnly = ditherOnHoverOnly;
+    this.ditherColors = ditherColors;
 
     this.seedX = Math.floor(Math.random() * 10000);
     this.seedY = Math.floor(Math.random() * 10000);
@@ -75,13 +76,9 @@ export class UIButton extends Entity {
       ctx.fillRect(Math.round(this.lx), Math.round(this.ly), intW, intH);
     }
 
-    if (this.ditherOnHoverOnly) {
-      this.text.ditherEnabled = this.hovered;
-    } else {
-      this.text.ditherEnabled = this.textDitherEnabled;
-    }
-
-    this.text.color = this.hovered ? this.hoverColor : this.color;
+    const dithering = this.ditherOnHoverOnly ? this.hovered : this.textDitherEnabled;
+    this.text.ditherEnabled = dithering;
+    this.text.color = dithering ? this.ditherColors[0] : (this.hovered ? this.hoverColor : this.color);
     this.text.draw(ctx);
   }
 }

@@ -1,3 +1,4 @@
+import * as engine from '../../engine.js';
 import { CardEffect } from "../card_effect.js";
 
 export class SpecialCardFreeze extends CardEffect {
@@ -8,6 +9,7 @@ export class SpecialCardFreeze extends CardEffect {
     }
 
     activate(card, game, board) {
+        engine.playSound('freeze_snd');
         const neighbours = board.getNeighbours(card.index, this.radius);
 
         for (const index of neighbours) {

@@ -53,7 +53,10 @@ export class MainMenu extends Scene {
       textDitherEnabled: true,
     });
 
-    this.exitBtn = new UIButton('EXIT', () => engine.shutdown(), {
+    this.exitBtn = new UIButton('EXIT', () => {
+      engine.shutdown();
+      window.close();
+    }, {
       ditherOnHoverOnly: true,
       ditherSpeed: 200,
       font: 'bold 30px "Trebuchet MS", sans-serif',

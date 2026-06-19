@@ -1023,9 +1023,9 @@ export function getLoadProgress() { return ENGINE.assetLoader.getProgress(); }
  * and automatically stops after `duration` seconds.
  *
  * @param {string} key        - Audio asset key
- * @param {number} [duration] - Playback length in seconds
+ * @param {number} [duration] - Playback length in seconds. If 0, plays until end or manually stopped.
  */
-export function playSound(key, duration = 0.12) {
+export function playSound(key, duration = 0) {
   const snd = ENGINE.assetLoader.get(key);
   if (!snd) return;
 
@@ -1036,13 +1036,54 @@ export function playSound(key, duration = 0.12) {
 
   snd.pause();
   snd.currentTime = 0;
+  snd.loop = false;
   snd.play().catch(() => {});
 
-  snd._stopTimer = setTimeout(() => {
-    snd.pause();
-    snd.currentTime = 0;
+  if (duration > 0) {
+    snd._stopTimer = setTimeout(() => {
+      snd.pause();
+      snd.currentTime = 0;
+      snd._stopTimer = null;
+    }, duration * 1000);
+  }
+}
+
+/**
+ * Plays a loaded audio asset in a loop.
+ *
+ * @param {string} key - Audio asset key
+ */
+export function playLoop(key) {
+  const snd = ENGINE.assetLoader.get(key);
+  if (!snd) return;
+
+  if (snd._stopTimer) {
+    clearTimeout(snd._stopTimer);
     snd._stopTimer = null;
-  }, duration * 1000);
+  }
+
+  snd.loop = true;
+  if (snd.paused) {
+    snd.play().catch(() => {});
+  }
+}
+
+/**
+ * Stops a playing audio asset.
+ *
+ * @param {string} key - Audio asset key
+ */
+export function stopSound(key) {
+  const snd = ENGINE.assetLoader.get(key);
+  if (!snd) return;
+
+  if (snd._stopTimer) {
+    clearTimeout(snd._stopTimer);
+    snd._stopTimer = null;
+  }
+
+  snd.pause();
+  snd.currentTime = 0;
 }
 
 

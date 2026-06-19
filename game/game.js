@@ -53,6 +53,14 @@ export class Game extends Entity {
 
         if (allNormalPairsMatched && !this.gameOver) {
             this.gameOver = true;
+            engine.playSound('win_snd');
+
+            this.board.cards.forEach(card => {
+                if (card && !card.faceUp) {
+                    card.targetFlipAnim = -1;
+                }
+            });
+
             if (this.onGameOver) {
                 this.onGameOver({
                     score: this.score,
@@ -202,6 +210,15 @@ export class Game extends Entity {
     tick(deltaTime) {
         if (this.started && !this.gameOver) {
             this.elapsed += deltaTime;
+        }
+
+        if (this.board) {
+            const hasFrozen = this.board.cards.some(c => c && c.frozen > 0);
+            if (hasFrozen && !this.gameOver) {
+                engine.playLoop('frozen_snd');
+            } else {
+                engine.stopSound('frozen_snd');
+            }
         }
 
         if (this.inputLockout > 0) {

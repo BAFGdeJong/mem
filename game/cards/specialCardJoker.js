@@ -1,7 +1,9 @@
+import * as engine from '../../engine.js';
 import { CardEffect } from "../card_effect.js";
 
 export class SpecialCardJoker extends CardEffect {
     activate(card, game, board) {
+        engine.playSound('joker_snd');
         const unflippedIndices = [];
         const unflippedCards = [];
 

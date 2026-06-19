@@ -20,9 +20,13 @@ export class GameScene extends Scene {
   }
 
     async preload() {
-    engine.registerAsset('flip_snd', './assets/audio/gladius.mp3', 'audio'); // Using gladius as placeholder if no other
-    engine.registerAsset('match_snd', './assets/audio/gladius.mp3', 'audio');
-    engine.registerAsset('bomb_snd', './assets/audio/gladius.mp3', 'audio');
+    engine.registerAsset('flip_snd', './assets/audio/flip.mp3', 'audio');
+    engine.registerAsset('match_snd', './assets/audio/match.mp3', 'audio');
+    engine.registerAsset('bomb_snd', './assets/audio/bomb.mp3', 'audio');
+    engine.registerAsset('joker_snd', './assets/audio/joker.mp3', 'audio');
+    engine.registerAsset('freeze_snd', './assets/audio/freeze.mp3', 'audio');
+    engine.registerAsset('frozen_snd', './assets/audio/frozen.mp3', 'audio');
+    engine.registerAsset('win_snd', './assets/audio/win.mp3', 'audio');
     
     engine.registerAsset('apple', './assets/texture/apple.png', 'texture');
     engine.registerAsset('banana', './assets/texture/banana.png', 'texture');
@@ -141,7 +145,9 @@ export class GameScene extends Scene {
     this.layout(screen.width, screen.height);
 
     game.onGameOver = (stats) => {
-        this.showGameOver(stats);
+        setTimeout(() => {
+            this.showGameOver(stats);
+        }, 2000);
     };
   }
 
@@ -259,6 +265,11 @@ export class GameScene extends Scene {
     document.body.appendChild(overlay);
     this.gameOverEl = overlay;
 
+    // Trigger animation
+    requestAnimationFrame(() => {
+        overlay.classList.add('active');
+    });
+
     const form = overlay.querySelector('.mm-go-form');
     const submitBtn = overlay.querySelector('.mm-go-submit');
     const status = overlay.querySelector('.mm-go-status');
@@ -313,7 +324,11 @@ export class GameScene extends Scene {
 
   dismissGameOver() {
     if (this.gameOverEl) {
-      this.gameOverEl.remove();
+      this.gameOverEl.classList.remove('active');
+      const el = this.gameOverEl;
+      setTimeout(() => {
+        el.remove();
+      }, 500);
       this.gameOverEl = null;
     }
   }
@@ -406,9 +421,18 @@ function injectGameOverStyles() {
       position: fixed; inset: 0; z-index: 1000;
       display: flex; align-items: center; justify-content: center;
       padding: 16px;
+      background: rgba(8, 8, 18, 0);
+      backdrop-filter: blur(0px);
+      font-family: 'Trebuchet MS', sans-serif;
+      opacity: 0;
+      pointer-events: none;
+      transition: background 0.5s ease, backdrop-filter 0.5s ease, opacity 0.5s ease;
+    }
+    .mm-go-overlay.active {
       background: rgba(8, 8, 18, 0.82);
       backdrop-filter: blur(4px);
-      font-family: 'Trebuchet MS', sans-serif;
+      opacity: 1;
+      pointer-events: auto;
     }
     .mm-go-card {
       width: min(420px, 92vw); max-height: 92vh; overflow-y: auto;
@@ -416,6 +440,11 @@ function injectGameOverStyles() {
       border: 1px solid rgba(255,255,255,0.10); border-radius: 18px;
       box-shadow: 0 24px 60px rgba(0,0,0,0.55);
       padding: 26px 26px 22px; color: #fff; text-align: center;
+      transform: scale(0.8);
+      transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .mm-go-overlay.active .mm-go-card {
+      transform: scale(1);
     }
     .mm-go-title {
       margin: 0; font-size: clamp(34px, 8vw, 52px); font-weight: 800;

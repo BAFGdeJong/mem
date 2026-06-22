@@ -7,6 +7,7 @@ export class UIPanel extends Entity {
   constructor({
     tag = 'ui-panel',
     groups = [],
+    visible = true,
     anchor = 'top-left',
     x = 0,
     y = 0,
@@ -26,6 +27,7 @@ export class UIPanel extends Entity {
     offsetY = 0
   } = {}) {
     super({ tag, groups });
+    this.visible = visible;
     this.anchor = anchor;
     this.x = x;
     this.y = y;
@@ -125,6 +127,8 @@ export class UIPanel extends Entity {
   }
 
   drawChild(ctx, child, cellX, cellY, cellW, cellH) {
+    if (!this.visible) return;
+
     ctx.save();
     ctx.beginPath();
     ctx.rect(cellX, cellY, cellW, cellH);
@@ -134,12 +138,16 @@ export class UIPanel extends Entity {
   }
 
   updateScroll(mouseY) {
+    if (!this.visible) return;
+
     const maxScroll = Math.max(0, this.contentHeight - this.height);
     const ratio = Math.max(0, Math.min(1, (mouseY - this.y) / this.height));
     this.scroll = -ratio * maxScroll;
   }
 
   input(event, e) {
+    if (!this.visible) return;
+
     const mouse = engine.getMousePosition();
     const button = e?.button ?? -1;
 
@@ -167,7 +175,7 @@ export class UIPanel extends Entity {
   }
 
   drawDebugMeasurements(ctx) {
-    if (!UIPanel.DEBUG_LINES) return;
+    if (!this.visible || !UIPanel.DEBUG_LINES) return;
 
     const mouse = engine.getMousePosition();
     if (mouse.x < this.x || mouse.x > this.x + this.width || mouse.y < this.y || mouse.y > this.y + this.height) return;
@@ -215,6 +223,8 @@ export class UIPanel extends Entity {
   }
 
   draw(ctx) {
+    if (!this.visible) return;
+
     const count = this.children.length;
     const p = this.padding;
     const m = this.margin;

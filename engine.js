@@ -53,9 +53,9 @@
  * ============================================================
  */
 
-import { Entity } from "./entities/entity.js";
-import { AssetLoader } from './asset-loader.js'
-import { Scene } from './scenes/scene.js';
+import {Entity} from "./entities/entity.js";
+import {AssetLoader} from './asset-loader.js'
+import {Scene} from './scenes/scene.js';
 
 /**
  * The engine. Not exported, use function API or app() builder.
@@ -1086,6 +1086,37 @@ export function stopSound(key) {
   snd.currentTime = 0;
 }
 
+registerLoader('texture-url-message', (src) => new Promise((resolve, reject) => {
+  const img = new Image();
+
+  fetch(src).then(response => response.blob())
+    .then(async blob => {
+      const text = await blob.text();
+      const json = JSON.parse(text);
+
+      fetch(json['message'])
+        .then(response => response.blob())
+        .then(blob => {
+          img.src = URL.createObjectURL(blob);
+          img.onload = () => resolve(img);
+          img.onerror = () => reject(new Error(`Failed: ${src}`));
+        })
+        .catch(error => console.error("Error fetching image:", error));
+    })
+}));
+
+registerLoader('texture-url', (src) => new Promise((resolve, reject) => {
+  const img = new Image();
+
+  fetch(src)
+    .then(response => response.blob())
+    .then(blob => {
+      img.src = URL.createObjectURL(blob);
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error(`Failed: ${src}`));
+    })
+    .catch(error => console.error("Error fetching image:", error));
+}));
 
 registerLoader('texture', (src) => new Promise((resolve, reject) => {
   const img = new Image();

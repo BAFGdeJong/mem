@@ -4,6 +4,7 @@ import * as engine from '../engine.js';
 import { UIButton } from '../entities/ui-button.js';
 import { UIText } from "../entities/ui-text.js";
 import { clamp } from "../game_math.js";
+import { animal_type, set_animal_type } from "../game/animal_type.js";
 
 export class MainMenu extends Scene {
   constructor() {
@@ -14,8 +15,6 @@ export class MainMenu extends Scene {
 
   async init() {
     this.children = [];
-
-    this.backgroundColor = '#0f0f1b';
 
     this.title = new UIText("MEMORY", {
         font: 'bold 72px "Trebuchet MS", sans-serif',
@@ -43,7 +42,50 @@ export class MainMenu extends Scene {
       margin: 24
     });
 
-    this.startBtn = new UIButton('START GAME', () => engine.switchScene('main-menu', 'game'));
+    this.popupPanel = new UIPanel({
+      tag: 'animal-popup',
+      visible: false,
+      width: 350,
+      height: 250,
+      background: 'rgba(20,20,20,1)',
+      direction: 'vertical',
+      alignX: 'center',
+      alignY: 'middle',
+      padding: 20,
+      margin: 10
+    });
+
+    this.popupTitle = new UIText('CHOOSE AN ANIMAL', {
+      font: 'bold 24px "Trebuchet MS", sans-serif',
+      color: '#ffffff',
+      align: 'center'
+    });
+
+    this.catBtn = new UIButton('CAT', () => {
+      set_animal_type('cat');
+      this.popupPanel.visible = false;
+      engine.switchScene('main-menu', 'game');
+    });
+
+    this.dogBtn = new UIButton('DOG', () => {
+      set_animal_type('dog');
+      this.popupPanel.visible = false;
+      engine.switchScene('main-menu', 'game');
+    });
+
+    this.cancelBtn = new UIButton('CANCEL', () => {
+      this.popupPanel.visible = false;
+    });
+
+    this.popupPanel
+      .add(this.popupTitle)
+      .add(this.catBtn)
+      .add(this.dogBtn)
+      .add(this.cancelBtn);
+
+    this.startBtn = new UIButton('START GAME', () => {
+      this.popupPanel.visible = true;
+    });
 
     this.exitBtn = new UIButton('EXIT', () => {
       engine.shutdown();
@@ -70,6 +112,7 @@ export class MainMenu extends Scene {
     this.children.push(this.subtitle);
     this.children.push(this.panel);
     this.children.push(this.debugToggle);
+    this.children.push(this.popupPanel);
 
     const screen = engine.getScreenSize();
     this.layout(screen.width, screen.height);
@@ -107,6 +150,15 @@ export class MainMenu extends Scene {
     this.debugToggle.y = m;
     this.debugToggle.width = d;
     this.debugToggle.height = d;
+
+    if (this.popupPanel) {
+      this.popupPanel.layout(
+        W / 2 - 175,
+        H / 2 - 125,
+        350,
+        250
+      );
+    }
   }
 
   onResize(W, H) {

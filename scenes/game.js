@@ -8,6 +8,7 @@ import { Card } from '../game/card.js';
 import { SpecialCardBomb } from '../game/cards/specialCardBomb.js';
 import { SpecialCardJoker } from '../game/cards/specialCardJoker.js';
 import { SpecialCardFreeze } from '../game/cards/specialCardFreeze.js';
+import { animal_type } from "../game/animal_type.js";
 
 import { UIText } from '../entities/ui-text.js';
 import { clamp } from '../game_math.js';
@@ -18,7 +19,7 @@ export class GameScene extends Scene {
     super('game', { z: 0 });
   }
 
-    async preload() {
+  async preload() {
     engine.registerAsset('flip_snd', './assets/audio/flip.mp3', 'audio');
     engine.registerAsset('match_snd', './assets/audio/match.mp3', 'audio');
     engine.registerAsset('bomb_snd', './assets/audio/bomb.mp3', 'audio');
@@ -26,18 +27,15 @@ export class GameScene extends Scene {
     engine.registerAsset('freeze_snd', './assets/audio/freeze.mp3', 'audio');
     engine.registerAsset('frozen_snd', './assets/audio/frozen.mp3', 'audio');
     engine.registerAsset('win_snd', './assets/audio/win.mp3', 'audio');
-    
-    engine.registerAsset('apple', './assets/texture/apple.png', 'texture');
-    engine.registerAsset('banana', './assets/texture/banana.png', 'texture');
-    engine.registerAsset('grapes', './assets/texture/grape.png', 'texture');
-    engine.registerAsset('orange', './assets/texture/orange.png', 'texture');
-    engine.registerAsset('pear', './assets/texture/pear.png', 'texture');
-    engine.registerAsset('cherries', './assets/texture/cherry.png', 'texture');
-    engine.registerAsset('strawberry', './assets/texture/strawberry.png', 'texture');
-    engine.registerAsset('watermelon', './assets/texture/watermelon.png', 'texture');
-    engine.registerAsset('pineapple', './assets/texture/pineapple.png', 'texture');
-    engine.registerAsset('peach', './assets/texture/peach.png', 'texture');
-    engine.registerAsset('blueberry', './assets/texture/blueberry.png', 'texture');
+
+    for (let i = 1; i <= 6; i++) {
+      engine.registerAsset('cat_' + i, 'https://cataas.com/cat?width=500&?height=500', 'texture-url');
+    }
+
+    for (let i = 1; i <= 6; i++) {
+      engine.registerAsset('dog_' + i, 'https://dog.ceo/api/breeds/image/random', 'texture-url-message');
+    }
+
     engine.registerAsset('joker', './assets/texture/joker.png', 'texture');
     engine.registerAsset('snowflake', './assets/texture/snowflake.png', 'texture');
     engine.registerAsset('bomb', './assets/texture/bomb.png', 'texture');
@@ -50,8 +48,6 @@ export class GameScene extends Scene {
 
   async init() {
     this.children = [];
-
-    this.backgroundColor = '#1a1a2e';
 
     const game = new Game();
     this.game = game;
@@ -335,16 +331,16 @@ export class GameScene extends Scene {
     const rows = 4;
     const cols = 4;
     const cardData = [
-      { id: 1, text: "APPLE", imageKey: 'apple' }, { id: 1, text: "APPLE", imageKey: 'apple' },
-      { id: 2, text: "BANANA", imageKey: 'banana' }, { id: 2, text: "BANANA", imageKey: 'banana' },
-      { id: 3, text: "GRAPES", imageKey: 'grapes' }, { id: 3, text: "GRAPES", imageKey: 'grapes' },
-      { id: 4, text: "ORANGE", imageKey: 'orange' }, { id: 4, text: "ORANGE", imageKey: 'orange' },
-      { id: 5, text: "PEAR", imageKey: 'pear' }, { id: 5, text: "PEAR", imageKey: 'pear' },
+      { id: 1, text: animal_type + '_1', imageKey: animal_type + '_1' }, { id: 1, text: animal_type + '_1', imageKey: animal_type + '_1' },
+      { id: 2, text: animal_type + '_2', imageKey: animal_type + '_2' }, { id: 2, text: animal_type + '_2', imageKey: animal_type + '_2' },
+      { id: 3, text: animal_type + '_3', imageKey: animal_type + '_3' }, { id: 3, text: animal_type + '_3', imageKey: animal_type + '_3' },
+      { id: 4, text: animal_type + '_4', imageKey: animal_type + '_4' }, { id: 4, text: animal_type + '_4', imageKey: animal_type + '_4' },
+      { id: 5, text: animal_type + '_5', imageKey: animal_type + '_5' }, { id: 5, text: animal_type + '_5', imageKey: animal_type + '_5' },
       { id: 6, text: "BOMB", effect: new SpecialCardBomb(1), imageKey: 'bomb' },
       { id: 6, text: "BOMB", effect: new SpecialCardBomb(1), imageKey: 'bomb' },
       { id: 7, text: "JOKER", effect: new SpecialCardJoker(), imageKey: 'joker' },
       { id: 8, text: "FREEZE", effect: new SpecialCardFreeze(1, 2), imageKey: 'snowflake' },
-      { id: 9, text: "CHERRY", imageKey: 'cherries' }, { id: 9, text: "CHERRY", imageKey: 'cherries' }
+      { id: 6, text: animal_type + '_6', imageKey: animal_type + '_6' }, { id: 6, text: animal_type + '_6', imageKey: animal_type + '_6' },
     ];
 
     const backImage = engine.getAsset('mystery');

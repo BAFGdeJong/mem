@@ -178,7 +178,7 @@ export class Board extends Entity {
                         const iw = cardWidth * imgScale;
                         const ih = cardHeight * imgScale;
                         const ix = x + (cardWidth - iw) / 2;
-                        const iy = y + (cardHeight - ih) / 2 - 10;
+                        const iy = y + (cardHeight - ih) / 2;
 
                         if (card.sprite) {
                             ctx.drawImage(
@@ -196,24 +196,6 @@ export class Board extends Entity {
                             );
                         }
                         ctx.restore();
-                    }
-
-                    if (card.text) {
-                        ctx.font = `bold ${Math.floor(cardHeight * 0.12)}px "Trebuchet MS", sans-serif`;
-                        ctx.textAlign = "center";
-                        
-                        const textW = ctx.measureText(card.text).width + 20;
-                        const textH = Math.floor(cardHeight * 0.16);
-                        
-                        ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
-                        ctx.fillRect(x + cardWidth/2 - textW/2, y + cardHeight - textH - 10, textW, textH);
-
-                        ctx.fillStyle = "#333";
-                        ctx.fillText(
-                            card.text,
-                            x + cardWidth / 2,
-                            y + cardHeight - 15,
-                        );
                     }
 
                     if (card.matched) {
@@ -341,17 +323,6 @@ export class Board extends Entity {
         }
 
         return neighbours;
-    }
-
-    swapCards(indexA, indexB) {
-        const cardA = this.cards[indexA];
-        const cardB = this.cards[indexB];
-        
-        this.cards[indexA] = cardB;
-        this.cards[indexB] = cardA;
-        
-        if (cardA) cardA.index = indexB;
-        if (cardB) cardB.index = indexA;
     }
 
     getCard(index) {

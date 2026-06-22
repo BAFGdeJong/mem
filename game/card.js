@@ -2,7 +2,6 @@ export class Card {
     constructor({
         id,
 
-        text = "",
         image = null,
         backImage = null,
 
@@ -13,7 +12,6 @@ export class Card {
     }) {
         this.id = id;
 
-        this.text = text;
         this.image = image;
         this.backImage = backImage;
 

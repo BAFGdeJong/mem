@@ -2,7 +2,6 @@ import { Scene } from './scene.js';
 import * as engine from '../engine.js';
 import { UIPanel } from '../entities/ui-panel.js';
 import { UIButton } from '../entities/ui-button.js';
-import { performSceneTransition } from '../perform-scene-transition.js';
 import { Game } from '../game/game.js';
 import { Board } from '../game/board.js';
 import { Card } from '../game/card.js';
@@ -109,17 +108,9 @@ export class GameScene extends Scene {
     this.restartBtn = new UIButton('RESTART', () => { this.restart() }, {
         font: 'bold 22px "Trebuchet MS", sans-serif',
         color: '#ffaa00',
-        ditherColors: ['#ffaa00', '#ffffff00'],
-        textDitherEnabled: true,
-        ditherOnHoverOnly: true,
+        hoverColor: '#fff',
     });
-    this.menuBtn = new UIButton('MENU', () => { performSceneTransition('game', 'main-menu') }, {
-        font: 'bold 22px "Trebuchet MS", sans-serif',
-        color: '#aaa',
-        ditherColors: ['#aaa', '#ffffff00'],
-        textDitherEnabled: true,
-        ditherOnHoverOnly: true,
-    });
+    this.menuBtn = new UIButton('MENU', () => { engine.switchScene('game', 'main-menu') });
     this.controls.add(this.restartBtn).add(this.menuBtn);
 
     this.debugToggle = new UIPanel({
@@ -318,7 +309,7 @@ export class GameScene extends Scene {
 
     overlay.querySelector('[data-action="menu"]').addEventListener('click', () => {
       this.dismissGameOver();
-      performSceneTransition('game', 'main-menu');
+      engine.switchScene('game', 'main-menu');
     });
   }
 

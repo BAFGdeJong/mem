@@ -2,7 +2,6 @@ import { Scene } from './scene.js';
 import { UIPanel } from '../entities/ui-panel.js';
 import * as engine from '../engine.js';
 import { UIButton } from '../entities/ui-button.js';
-import { performSceneTransition } from '../perform-scene-transition.js';
 import { UIText } from "../entities/ui-text.js";
 import { clamp } from "../game_math.js";
 
@@ -44,25 +43,11 @@ export class MainMenu extends Scene {
       margin: 24
     });
 
-    this.startBtn = new UIButton('START GAME', () => { performSceneTransition('main-menu', 'game') }, {
-      ditherOnHoverOnly: true,
-      ditherSpeed: 200,
-      font: 'bold 40px "Trebuchet MS", sans-serif',
-      color: '#fff',
-      ditherColors: ['#00ffcc', '#ffffff00'],
-      textDitherEnabled: true,
-    });
+    this.startBtn = new UIButton('START GAME', () => engine.switchScene('main-menu', 'game'));
 
     this.exitBtn = new UIButton('EXIT', () => {
       engine.shutdown();
       window.close();
-    }, {
-      ditherOnHoverOnly: true,
-      ditherSpeed: 200,
-      font: 'bold 30px "Trebuchet MS", sans-serif',
-      color: '#666',
-      ditherColors: ['#00ffcc', '#ffffff00'],
-      textDitherEnabled: true,
     });
 
     this.panel.add(this.startBtn).add(this.exitBtn);

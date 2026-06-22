@@ -7,15 +7,6 @@ export class UIButton extends Entity {
     color = '#aaaaaa',
     hoverColor = '#ffffff',
     font = '14px monospace',
-
-    textDitherEnabled = false,
-    ditherOnHoverOnly = false,
-    ditherColors = ['#00ff00', '#000000'],
-    ditherSize = 4,
-    ditherDirection = 'diagonal',
-    ditherSpeed = 100,
-    ditherHarshness = 1.0,
-    ditherSpacing = 0.05,
   } = {}) {
     super();
     this.onClick = onClick;
@@ -25,24 +16,10 @@ export class UIButton extends Entity {
 
     this.lx = 0; this.ly = 0; this.lw = 0; this.lh = 0;
 
-    this.textDitherEnabled = textDitherEnabled;
-    this.ditherOnHoverOnly = ditherOnHoverOnly;
-    this.ditherColors = ditherColors;
-
-    this.seedX = Math.floor(Math.random() * 10000);
-    this.seedY = Math.floor(Math.random() * 10000);
-
     this.text = new UIText(text, {
       color,
       font,
       align: 'center',
-      ditherEnabled: textDitherEnabled,
-      ditherColor2: ditherColors[1],
-      ditherSize: ditherSize,
-      ditherDirection: ditherDirection,
-      ditherSpeed: ditherSpeed,
-      ditherHarshness: ditherHarshness,
-      ditherSpacing: ditherSpacing
     });
   }
 
@@ -76,9 +53,7 @@ export class UIButton extends Entity {
       ctx.fillRect(Math.round(this.lx), Math.round(this.ly), intW, intH);
     }
 
-    const dithering = this.ditherOnHoverOnly ? this.hovered : this.textDitherEnabled;
-    this.text.ditherEnabled = dithering;
-    this.text.color = dithering ? this.ditherColors[0] : (this.hovered ? this.hoverColor : this.color);
+    this.text.color = this.hovered ? this.hoverColor : this.color;
     this.text.draw(ctx);
   }
 }

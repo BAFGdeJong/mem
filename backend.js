@@ -1,13 +1,5 @@
-// Thin client for the memory-backend API (Symfony app on :8000).
-// CORS on the backend is permissive (allow_origin '*'), so cross-origin
-// fetches from the game's dev server are accepted.
-
 const API_BASE = 'http://localhost:8000';
 
-/**
- * Logs a player in and returns their JWT.
- * @throws {Error} with `.status` set on failure (401 = bad credentials).
- */
 export async function login(username, password) {
   const res = await fetch(`${API_BASE}/memory/login`, {
     method: 'POST',
@@ -27,11 +19,6 @@ export async function login(username, password) {
   return data.token;
 }
 
-/**
- * Saves a game for the authenticated player.
- * @param {string} token  JWT from login()
- * @param {{score:number, api?:string, color_found?:string, color_closed?:string}} game
- */
 export async function saveGame(token, game) {
   const res = await fetch(`${API_BASE}/game/save`, {
     method: 'POST',
@@ -51,7 +38,6 @@ export async function saveGame(token, game) {
   return res.json().catch(() => ({}));
 }
 
-/** Convenience: log in and save a game in one call. */
 export async function submitScore(username, password, game) {
   const token = await login(username, password);
   return saveGame(token, game);
